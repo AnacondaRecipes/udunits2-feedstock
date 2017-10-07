@@ -21,6 +21,7 @@ build:
 
 requirements:
   build:
+    - {{ compiler('c') }}  # unix
     - python  # [win]
     - cmake  # [win]
     - automake  # [not win]
