@@ -1,18 +1,45 @@
-From cbccb0fd9a4a3243d049a52ad7ee3145a6440d53 Mon Sep 17 00:00:00 2001
+From a703ec6225ae734eda76291965159025132e2359 Mon Sep 17 00:00:00 2001
 From: Ray Donnelly <mingw.android@gmail.com>
 Date: Thu, 10 Aug 2017 20:40:55 -0500
 Subject: [PATCH 2/2] Use the shared library to locate the default xml
 
 ---
- lib/xml.c       | 49 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ configure.ac    |  2 ++
+ lib/xml.c       | 55 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-
  prog/udunits2.c |  7 ++++++-
- 2 files changed, 54 insertions(+), 2 deletions(-)
+ 3 files changed, 62 insertions(+), 2 deletions(-)
 
+diff --git a/configure.ac b/configure.ac
+index 5f718bd..4947a7b 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -100,6 +100,8 @@ AC_SEARCH_LIBS([log10], [m], ,
+ AC_SEARCH_LIBS([XML_StopParser], [expat], , 
+     AC_MSG_ERROR([cannot find EXPAT function XML_StopParser]))
+ 
++AC_CHECK_LIB([dl], [dlopen])
++
+ # Checks for header files.
+ AC_HEADER_STDC
+ AC_CHECK_HEADERS([float.h inttypes.h stddef.h stdlib.h string.h strings.h])
 diff --git a/lib/xml.c b/lib/xml.c
-index 997f6f8..e4ef814 100644
+index 997f6f8..a6a835b 100644
 --- a/lib/xml.c
 +++ b/lib/xml.c
-@@ -34,6 +34,14 @@
+@@ -18,6 +18,12 @@
+ #   define _XOPEN_SOURCE 500
+ #endif
+ 
++#if defined(__linux__)
++#   ifndef _GNU_SOURCE
++#       define _GNU_SOURCE
++#   endif
++#endif
++
+ #include <assert.h>
+ #include <errno.h>
+ #include <fcntl.h>
+@@ -34,6 +40,14 @@
  #endif
  #include <sys/stat.h>
  #include <sys/types.h>
@@ -27,7 +54,7 @@ index 997f6f8..e4ef814 100644
  
  #ifndef DLL_UDUNITS2
  #define XML_STATIC
-@@ -2116,6 +2124,45 @@ readXml(
+@@ -2116,6 +2130,45 @@ readXml(
  }
  
  
@@ -35,7 +62,7 @@ index 997f6f8..e4ef814 100644
 +const char*
 +default_udunits2_xml_path()
 +{
-+    char * soname = 0;
++    char const * soname = 0;
 +#if defined(__APPLE__) || defined(__linux__)
 +    #define END_BIT "/share/udunits/udunits2.xml"
 +    #define SEP '/'
@@ -73,7 +100,7 @@ index 997f6f8..e4ef814 100644
  /**
   * Returns the pathname of the XML database.
   *
-@@ -2142,7 +2189,7 @@ ut_get_path_xml(
+@@ -2142,7 +2195,7 @@ ut_get_path_xml(
          	*status = UT_OPEN_ENV;
      	}
      	else {
@@ -112,5 +139,5 @@ index 63402b5..c179c33 100644
  
  /**
 -- 
-2.11.1
+2.14.1
 

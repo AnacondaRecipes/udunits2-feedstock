@@ -26,7 +26,7 @@ requirements:
     - {{p}}autoconf
     - {{p}}automake          # [unix]
     - {{p}}automake-wrapper  # [win]
-    - {{p}}texinfo
+    - {{p}}texinfo           # [win]
     - {{p}}libtool
     - posix                  # [win]
     - {{p}}flex
