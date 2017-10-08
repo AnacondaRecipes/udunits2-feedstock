@@ -1,46 +1,45 @@
-{% set version = "2.2.23" %}
-{% set commit = "d3540a8077f83b87490bec71191c8d3060a01ee1" %}
+{% set version = "2.2.25" %}
+{% set p = 'm2-' if win else '' %}
+{% set n = 'm2w64-' if win else '' %}
 
 package:
-  name: udunits2
+  name: udunits2        # [unix]
+  name: m2w64-udunits2  # [win]
   version: {{ version }}
 
 source:
-  fn: {{ commit }}.tar.gz
-  url: https://github.com/Unidata/UDUNITS-2/archive/{{ commit }}.tar.gz
-  sha256: 26c893864288d98fe876c43dc1239a8ff2d07fdd4ae027d2d30700a77a4ae1d8
+  git_url: https://github.com/Unidata/UDUNITS-2
+  git_tag: v{{ version }}
+  patches:
+    - 0001-Win-32-Fix-shared-library-build.patch
+    - 0002-Use-the-shared-library-to-locate-the-default-xml.patch
 
 build:
   number: 1
-  detect_binary_files_with_prefix: true
-  skip: True  # [win and py35]
-  features:
-    - vc9  # [win and py27]
-    - vc10  # [win and py34]
-    - vc14  # [win and (py35 and py36)]
+  detect_binary_files_with_prefix: False
 
 requirements:
   build:
-    - {{ compiler('c') }}  # unix
-    - python  # [win]
-    - cmake  # [win]
-    - automake  # [not win]
-    - libtool  # [not win]
-    - texinfo  # [not win]
-    - expat
-    - vc 9  # [win and py27]
-    - vc 10  # [win and py34]
-    - vc 14  # [win and (py35 and py36)]
+    - {{ compiler('c') }}    # [unix]
+    - {{n}}toolchain         # [win]
+    - {{p}}git
+    - {{p}}autoconf
+    - {{p}}automake          # [unix]
+    - {{p}}automake-wrapper  # [win]
+    - {{p}}texinfo
+    - {{p}}libtool
+    - posix                  # [win]
+    - {{p}}flex
+    - {{p}}bison
+    - {{n}}expat
   run:
-    - expat
-    - vc 9  # [win and py27]
-    - vc 10  # [win and py34]
-    - vc 14  # [win and (py35 and py36)]
+    - {{n}}gcc-libs          # [win]
+    - {{n}}expat
 
 test:
   commands:
     - udunits2 -h
-    - udunits2 -H meter -W miles  # [not win]
+    - udunits2 -H meter -W miles
     - conda inspect linkages -p $PREFIX udunits2  # [not win]
     - conda inspect objects -p $PREFIX udunits2  # [osx]
 
@@ -56,3 +55,4 @@ extra:
     - ocefpaf
     - pelson
     - dkillick
+    - mingwandroid

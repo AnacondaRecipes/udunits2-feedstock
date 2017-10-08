@@ -1,0 +1,116 @@
+From cbccb0fd9a4a3243d049a52ad7ee3145a6440d53 Mon Sep 17 00:00:00 2001
+From: Ray Donnelly <mingw.android@gmail.com>
+Date: Thu, 10 Aug 2017 20:40:55 -0500
+Subject: [PATCH 2/2] Use the shared library to locate the default xml
+
+---
+ lib/xml.c       | 49 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ prog/udunits2.c |  7 ++++++-
+ 2 files changed, 54 insertions(+), 2 deletions(-)
+
+diff --git a/lib/xml.c b/lib/xml.c
+index 997f6f8..e4ef814 100644
+--- a/lib/xml.c
++++ b/lib/xml.c
+@@ -34,6 +34,14 @@
+ #endif
+ #include <sys/stat.h>
+ #include <sys/types.h>
++#if defined(__linux__)
++#include <dlfcn.h>
++#elif defined(__APPLE__)
++#define _DARWIN_C_SOURCE
++#include <dlfcn.h>
++#elif defined _WIN32
++#include <windows.h>
++#endif
+ 
+ #ifndef DLL_UDUNITS2
+ #define XML_STATIC
+@@ -2116,6 +2124,45 @@ readXml(
+ }
+ 
+ 
++/* A bit hacky but much better than modifying binaries. */
++const char*
++default_udunits2_xml_path()
++{
++    char * soname = 0;
++#if defined(__APPLE__) || defined(__linux__)
++    #define END_BIT "/share/udunits/udunits2.xml"
++    #define SEP '/'
++    Dl_info info;
++    if (dladdr(default_udunits2_xml_path, &info)) {
++        soname = info.dli_fname;
++    }
++#elif defined(_WIN32)
++    #define END_BIT "\\share\\udunits\\udunits2.xml"
++    #define SEP '\\'
++    // NB: XP+ solution!
++    HMODULE hModule = NULL;
++    GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCTSTR)default_udunits2_xml_path, &hModule);
++    char tmpbuf[MAX_PATH];
++    GetModuleFileName(hModule, &tmpbuf[0], MAX_PATH);
++    soname = &tmpbuf[0];
++#endif
++    if (soname) {
++        char * result = malloc(strlen(soname) + strlen(END_BIT) + 1);
++        if (result) {
++            strcpy(result, soname);
++            if (strrchr(result, SEP)) {
++                *strrchr(result, SEP) = '\0';
++                if (strrchr(result, SEP)) {
++                    *strrchr(result, SEP) = '\0';
++                }
++            }
++            strcat(result, END_BIT);
++            return result;
++        }
++    }
++    return DEFAULT_UDUNITS2_XML_PATH;
++}
++
+ /**
+  * Returns the pathname of the XML database.
+  *
+@@ -2142,7 +2189,7 @@ ut_get_path_xml(
+         	*status = UT_OPEN_ENV;
+     	}
+     	else {
+-          	path = DEFAULT_UDUNITS2_XML_PATH;
++          	path = default_udunits2_xml_path();
+         	*status = UT_OPEN_DEFAULT;
+     	}
+     }
+diff --git a/prog/udunits2.c b/prog/udunits2.c
+index 63402b5..c179c33 100644
+--- a/prog/udunits2.c
++++ b/prog/udunits2.c
+@@ -61,10 +61,14 @@ static int		_wantDefinition; /* "have" unit definition desired? */
+ static int		_formattingOptions = UT_DEFINITION;
+ static int		_exitStatus = EXIT_FAILURE;
+ 
++extern const char*
++default_udunits2_xml_path();
+ 
+ static void
+ usage(void)
+ {
++    const char * default_xml = default_udunits2_xml_path();
++
+     (void)fprintf(stderr,
+ "Usage:\n"
+ "    %s -h\n"
+@@ -80,7 +84,8 @@ usage(void)
+ "    -W want    Use \"want\" unit for conversion. Empty string requests\n"
+ "               definition of \"have\" unit. Default is reply to prompt.\n"
+ "    XML_file   XML database file. Default is \"%s\".\n",
+-        _progname, _progname, DEFAULT_UDUNITS2_XML_PATH);
++        _progname, _progname, default_xml);
++    free(default_xml);
+ }
+ 
+ /**
+-- 
+2.11.1
+
