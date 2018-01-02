@@ -32,6 +32,8 @@ requirements:
     - {{p}}flex
     - {{p}}bison
     - {{n}}expat
+  host:
+    - {{n}}gcc-libs          # [win]
   run:
     - {{n}}gcc-libs          # [win]
     - {{n}}expat
