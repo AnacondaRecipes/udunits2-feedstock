@@ -1,4 +1,4 @@
-{% set version = "2.2.25" %}
+{% set version = "2.2.26" %}
 {% set p = 'm2-' if win else '' %}
 {% set n = 'm2w64-' if win else '' %}
 
@@ -31,6 +31,7 @@ requirements:
     - posix                  # [win]
     - {{p}}flex
     - {{p}}bison
+  host:
     - {{n}}expat
   host:
     - {{n}}gcc-libs          # [win]
